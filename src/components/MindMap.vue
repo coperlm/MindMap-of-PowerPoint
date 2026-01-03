@@ -53,6 +53,10 @@ const props = defineProps({
   markdown: {
     type: String,
     default: ''
+  },
+  imageMapping: {
+    type: Object,
+    default: () => ({})
   }
 })
 
@@ -64,6 +68,11 @@ const nodeList = ref([])
 const currentNodeIndex = ref(0)
 const nodeElements = ref([])
 const nodeDataMap = ref(new Map())
+
+// 检查节点是否有图片
+const hasImages = (topic) => {
+  return imageMapping.value[topic]?.images?.length > 0
+}
 
 // 解析 Markdown 为树结构
 const parseMarkdown = (markdown) => {
@@ -152,12 +161,15 @@ const initJsMind = () => {
   // 添加点击事件
   addClickListeners()
   
-  // 初始高亮第一个节点
+  // 初始高亮第一个有图片的节点
   if (nodeList.value.length > 0) {
-    currentNodeIndex.value = 0
-    setTimeout(() => {
-      highlightNode(currentNodeIndex.value)
-    }, 600)
+    const firstWithImages = getNextNodeWithImages(0)
+    if (firstWithImages !== -1) {
+      currentNodeIndex.value = firstWithImages
+      setTimeout(() => {
+        highlightNode(currentNodeIndex.value)
+      }, 600)
+    }
   }
 }
 
@@ -205,6 +217,28 @@ const highlightNode = (index) => {
   }
 }
 
+// 获取下一个有图片的节点索引
+const getNextNodeWithImages = (startIndex) => {
+  for (let i = startIndex; i < nodeList.value.length; i++) {
+    const node = nodeList.value[i]
+    if (hasImages(node.topic)) {
+      return i
+    }
+  }
+  return -1
+}
+
+// 获取上一个有图片的节点索引
+const getPrevNodeWithImages = (startIndex) => {
+  for (let i = startIndex; i >= 0; i--) {
+    const node = nodeList.value[i]
+    if (hasImages(node.topic)) {
+      return i
+    }
+  }
+  return -1
+}
+
 // 键盘导航处理
 const handleKeyNavigation = (e) => {
   if (!nodeList.value.length) return
@@ -214,79 +248,95 @@ const handleKeyNavigation = (e) => {
   if (e.key === 'ArrowRight') {
     e.preventDefault()
     
-    // 如果有子节点，跳到第一个子节点
+    // 如果有子节点，跳到第一个有图片的子节点
     if (current.children && current.children.length > 0) {
-      const firstChildId = current.children[0].id
-      const childIndex = nodeList.value.findIndex(n => n.id === firstChildId)
-      if (childIndex !== -1) {
-        currentNodeIndex.value = childIndex
-        highlightNode(currentNodeIndex.value)
-        return
+      for (let child of current.children) {
+        const childId = child.id
+        const childIndex = nodeList.value.findIndex(n => n.id === childId)
+        if (childIndex !== -1 && hasImages(nodeList.value[childIndex].topic)) {
+          currentNodeIndex.value = childIndex
+          highlightNode(currentNodeIndex.value)
+          return
+        }
       }
+      // 如果所有子节点都没有图片，继续查找下一个兄弟
     }
     
-    // 否则跳到下一个兄弟节点
+    // 否则跳到下一个有图片的兄弟节点
     if (current.parent) {
       const siblings = current.parent.children
       const currentIndexInSiblings = siblings.findIndex(s => s.id === current.id)
       
-      if (currentIndexInSiblings < siblings.length - 1) {
-        // 跳到下一个兄弟
-        const nextSiblingId = siblings[currentIndexInSiblings + 1].id
-        const nextIndex = nodeList.value.findIndex(n => n.id === nextSiblingId)
-        if (nextIndex !== -1) {
-          currentNodeIndex.value = nextIndex
+      // 从下一个兄弟开始查找
+      for (let i = currentIndexInSiblings + 1; i < siblings.length; i++) {
+        const siblingId = siblings[i].id
+        const siblingIndex = nodeList.value.findIndex(n => n.id === siblingId)
+        if (siblingIndex !== -1 && hasImages(nodeList.value[siblingIndex].topic)) {
+          currentNodeIndex.value = siblingIndex
           highlightNode(currentNodeIndex.value)
           return
         }
-      } else {
-        // 最后一个子节点，找父节点的下一个兄弟
-        let parentNode = current.parent
-        while (parentNode && parentNode.parent) {
-          const parentSiblings = parentNode.parent.children
-          const parentIndexInSiblings = parentSiblings.findIndex(s => s.id === parentNode.id)
-          
-          if (parentIndexInSiblings < parentSiblings.length - 1) {
-            const nextUncleId = parentSiblings[parentIndexInSiblings + 1].id
-            const nextIndex = nodeList.value.findIndex(n => n.id === nextUncleId)
-            if (nextIndex !== -1) {
-              currentNodeIndex.value = nextIndex
-              highlightNode(currentNodeIndex.value)
-              return
-            }
+      }
+      
+      // 最后一个子节点，找父节点的下一个有图片的兄弟
+      let parentNode = current.parent
+      while (parentNode && parentNode.parent) {
+        const parentSiblings = parentNode.parent.children
+        const parentIndexInSiblings = parentSiblings.findIndex(s => s.id === parentNode.id)
+        
+        for (let i = parentIndexInSiblings + 1; i < parentSiblings.length; i++) {
+          const uncleId = parentSiblings[i].id
+          const uncleIndex = nodeList.value.findIndex(n => n.id === uncleId)
+          if (uncleIndex !== -1 && hasImages(nodeList.value[uncleIndex].topic)) {
+            currentNodeIndex.value = uncleIndex
+            highlightNode(currentNodeIndex.value)
+            return
           }
-          parentNode = parentNode.parent
         }
+        parentNode = parentNode.parent
       }
     }
   } else if (e.key === 'ArrowLeft') {
     e.preventDefault()
     
-    // 左键：右键的逆操作
+    // 左键：右键的逆操作，跳过没有图片的节点
     if (current.parent) {
       const siblings = current.parent.children
       const currentIndexInSiblings = siblings.findIndex(s => s.id === current.id)
       
-      if (currentIndexInSiblings > 0) {
-        // 有上一个兄弟节点，跳到上一个兄弟的最后一个后代
-        const prevSiblingId = siblings[currentIndexInSiblings - 1].id
+      // 查找上一个有图片的兄弟节点
+      for (let i = currentIndexInSiblings - 1; i >= 0; i--) {
+        const prevSiblingId = siblings[i].id
         const prevSiblingNode = nodeDataMap.value.get(prevSiblingId)
         
-        // 找到这个兄弟节点的最后一个后代
-        let targetNode = prevSiblingNode
-        while (targetNode.children && targetNode.children.length > 0) {
-          const lastChild = targetNode.children[targetNode.children.length - 1]
-          targetNode = nodeDataMap.value.get(lastChild.id)
+        if (hasImages(prevSiblingNode.topic)) {
+          // 找到这个兄弟节点的最后一个有图片的后代
+          let targetNode = prevSiblingNode
+          while (targetNode.children && targetNode.children.length > 0) {
+            let foundChild = false
+            for (let j = targetNode.children.length - 1; j >= 0; j--) {
+              const lastChild = targetNode.children[j]
+              const childNode = nodeDataMap.value.get(lastChild.id)
+              if (hasImages(childNode.topic)) {
+                targetNode = childNode
+                foundChild = true
+                break
+              }
+            }
+            if (!foundChild) break
+          }
+          
+          const targetIndex = nodeList.value.findIndex(n => n.id === targetNode.id)
+          if (targetIndex !== -1) {
+            currentNodeIndex.value = targetIndex
+            highlightNode(currentNodeIndex.value)
+            return
+          }
         }
-        
-        const targetIndex = nodeList.value.findIndex(n => n.id === targetNode.id)
-        if (targetIndex !== -1) {
-          currentNodeIndex.value = targetIndex
-          highlightNode(currentNodeIndex.value)
-          return
-        }
-      } else {
-        // 是第一个子节点，跳到父节点
+      }
+      
+      // 没有找到上一个兄弟，跳到父节点（如果父节点有图片）
+      if (hasImages(current.parent.topic)) {
         const parentIndex = nodeList.value.findIndex(n => n.id === current.parent.id)
         if (parentIndex !== -1) {
           currentNodeIndex.value = parentIndex
@@ -371,6 +421,22 @@ const zoomOut = () => {
 watch(() => props.markdown, () => {
   nextTick(() => {
     initJsMind()
+// 监听 imageMapping 变化
+watch(() => props.imageMapping, () => {
+  // imageMapping 更新后重新高亮
+  if (nodeList.value.length > 0) {
+    const firstWithImages = getNextNodeWithImages(0)
+    if (firstWithImages !== -1) {
+      currentNodeIndex.value = firstWithImages
+      setTimeout(() => {
+        highlightNode(currentNodeIndex.value)
+      }, 100)
+    }
+  }
+}, { deep: true })
+
+const imageMapping = computed(() => props.imageMapping)
+
   })
 })
 

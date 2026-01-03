@@ -18,6 +18,7 @@
       <!-- 思维导图 -->
       <MindMap 
         :markdown="markdown" 
+        :image-mapping="imageMapping"
         @node-click="handleNodeClick"
         class="w-full h-full"
       />
