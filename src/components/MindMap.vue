@@ -1,0 +1,417 @@
+<template>
+  <div class="relative w-full h-full bg-white">
+    <!-- 控制按钮和提示 -->
+    <div class="absolute top-4 right-4 z-10 flex flex-col gap-2">
+      <div class="flex gap-2">
+        <button 
+          @click="zoomIn"
+          class="px-4 py-2 bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow border border-gray-200 text-sm font-medium text-gray-700 hover:text-blue-600"
+        >
+          放大
+        </button>
+        <button 
+          @click="zoomOut"
+          class="px-4 py-2 bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow border border-gray-200 text-sm font-medium text-gray-700 hover:text-blue-600"
+        >
+          缩小
+        </button>
+      </div>
+      
+      <!-- 键盘提示 -->
+      <div class="bg-white rounded-lg shadow-md border border-gray-200 px-4 py-3 text-xs text-gray-600">
+        <div class="font-semibold mb-2 text-gray-800">⌨️ 键盘导航</div>
+        <div class="space-y-1">
+          <div><span class="font-mono bg-gray-100 px-2 py-0.5 rounded">→</span> 进入子节点/下一个</div>
+          <div><span class="font-mono bg-gray-100 px-2 py-0.5 rounded">←</span> 返回父节点</div>
+          <div><span class="font-mono bg-gray-100 px-2 py-0.5 rounded">Enter</span> 查看图片</div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- 思维导图容器 -->
+    <div 
+      ref="jsmindContainer" 
+      class="w-full h-full"
+    ></div>
+    
+    <!-- 提示信息 -->
+    <div v-if="!markdown" class="absolute inset-0 flex items-center justify-center">
+      <div class="text-center">
+        <div class="text-6xl mb-4">🧠</div>
+        <p class="text-gray-500">加载中...</p>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { ref, watch, onMounted, onUnmounted, nextTick } from 'vue'
+import jsMind from 'jsmind'
+import 'jsmind/style/jsmind.css'
+
+const props = defineProps({
+  markdown: {
+    type: String,
+    default: ''
+  }
+})
+
+const emit = defineEmits(['node-click'])
+
+const jsmindContainer = ref(null)
+let jm = null
+const nodeList = ref([])
+const currentNodeIndex = ref(0)
+const nodeElements = ref([])
+const nodeDataMap = ref(new Map())
+
+// 解析 Markdown 为树结构
+const parseMarkdown = (markdown) => {
+  const lines = markdown.split('\n').filter(line => line.trim())
+  const root = { id: 'root', topic: '根节点', children: [] }
+  const stack = [{ level: 0, node: root }]
+  
+  lines.forEach((line, index) => {
+    const match = line.match(/^(#{1,6})\s+(.+)$/)
+    if (match) {
+      const level = match[1].length
+      const topic = match[2].trim()
+      const node = {
+        id: `node_${index}`,
+        topic: topic,
+        children: []
+      }
+      
+      // 找到父节点
+      while (stack.length > 0 && stack[stack.length - 1].level >= level) {
+        stack.pop()
+      }
+      
+      if (stack.length > 0) {
+        const parent = stack[stack.length - 1].node
+        if (!parent.children) parent.children = []
+        parent.children.push(node)
+      }
+      
+      stack.push({ level, node })
+    }
+  })
+  
+  return root.children.length > 0 ? root.children[0] : root
+}
+
+// 初始化思维导图
+const initJsMind = () => {
+  if (!jsmindContainer.value || !props.markdown) return
+  
+  const mindData = parseMarkdown(props.markdown)
+  
+  const options = {
+    container: jsmindContainer.value,
+    theme: 'primary',
+    editable: false,
+    depth: 4,
+    view: {
+      hmargin: 120,
+      vmargin: 20,
+      line_width: 2,
+      line_color: '#558'
+    },
+    layout: {
+      hspace: 50,
+      vspace: 20,
+      pspace: 15
+    }
+  }
+  
+  // 禁用默认的折叠/展开功能
+  jsMind.prototype.expand_node = function() { return }
+  jsMind.prototype.collapse_node = function() { return }
+  
+  const mind = {
+    meta: {
+      name: 'MMPPPT',
+      version: '1.0'
+    },
+    format: 'node_tree',
+    data: mindData
+  }
+  
+  if (jm) {
+    jm = null
+    jsmindContainer.value.innerHTML = ''
+  }
+  
+  jm = new jsMind(options)
+  jm.show(mind)
+  
+  // 构建导航列表
+  nodeList.value = buildNavigationList(mindData)
+  console.log('导航节点列表:', nodeList.value.map(n => n.topic))
+  
+  // 添加点击事件
+  addClickListeners()
+  
+  // 初始高亮第一个节点
+  if (nodeList.value.length > 0) {
+    currentNodeIndex.value = 0
+    setTimeout(() => {
+      highlightNode(currentNodeIndex.value)
+    }, 600)
+  }
+}
+
+// 构建节点导航列表（深度优先遍历）
+const buildNavigationList = (node, list = [], parent = null, level = 0) => {
+  if (!node) return list
+  
+  const nodeInfo = {
+    id: node.id,
+    topic: node.topic,
+    parent: parent,
+    children: node.children || [],
+    level: level
+  }
+  
+  list.push(nodeInfo)
+  nodeDataMap.value.set(node.id, nodeInfo)
+  
+  if (node.children && node.children.length > 0) {
+    node.children.forEach(child => {
+      buildNavigationList(child, list, nodeInfo, level + 1)
+    })
+  }
+  
+  return list
+}
+
+// 高亮当前节点
+const highlightNode = (index) => {
+  // 移除所有高亮
+  nodeElements.value.forEach(el => {
+    el.style.outline = ''
+    el.style.backgroundColor = ''
+    el.style.fontWeight = ''
+  })
+  
+  if (index >= 0 && index < nodeElements.value.length) {
+    const element = nodeElements.value[index]
+    element.style.outline = '3px solid #3b82f6'
+    element.style.backgroundColor = 'rgba(59, 130, 246, 0.1)'
+    element.style.fontWeight = 'bold'
+    
+    // 滚动到视图中
+    element.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  }
+}
+
+// 键盘导航处理
+const handleKeyNavigation = (e) => {
+  if (!nodeList.value.length) return
+  
+  const current = nodeList.value[currentNodeIndex.value]
+  
+  if (e.key === 'ArrowRight') {
+    e.preventDefault()
+    
+    // 如果有子节点，跳到第一个子节点
+    if (current.children && current.children.length > 0) {
+      const firstChildId = current.children[0].id
+      const childIndex = nodeList.value.findIndex(n => n.id === firstChildId)
+      if (childIndex !== -1) {
+        currentNodeIndex.value = childIndex
+        highlightNode(currentNodeIndex.value)
+        return
+      }
+    }
+    
+    // 否则跳到下一个兄弟节点
+    if (current.parent) {
+      const siblings = current.parent.children
+      const currentIndexInSiblings = siblings.findIndex(s => s.id === current.id)
+      
+      if (currentIndexInSiblings < siblings.length - 1) {
+        // 跳到下一个兄弟
+        const nextSiblingId = siblings[currentIndexInSiblings + 1].id
+        const nextIndex = nodeList.value.findIndex(n => n.id === nextSiblingId)
+        if (nextIndex !== -1) {
+          currentNodeIndex.value = nextIndex
+          highlightNode(currentNodeIndex.value)
+          return
+        }
+      } else {
+        // 最后一个子节点，找父节点的下一个兄弟
+        let parentNode = current.parent
+        while (parentNode && parentNode.parent) {
+          const parentSiblings = parentNode.parent.children
+          const parentIndexInSiblings = parentSiblings.findIndex(s => s.id === parentNode.id)
+          
+          if (parentIndexInSiblings < parentSiblings.length - 1) {
+            const nextUncleId = parentSiblings[parentIndexInSiblings + 1].id
+            const nextIndex = nodeList.value.findIndex(n => n.id === nextUncleId)
+            if (nextIndex !== -1) {
+              currentNodeIndex.value = nextIndex
+              highlightNode(currentNodeIndex.value)
+              return
+            }
+          }
+          parentNode = parentNode.parent
+        }
+      }
+    }
+  } else if (e.key === 'ArrowLeft') {
+    e.preventDefault()
+    
+    // 左键：右键的逆操作
+    if (current.parent) {
+      const siblings = current.parent.children
+      const currentIndexInSiblings = siblings.findIndex(s => s.id === current.id)
+      
+      if (currentIndexInSiblings > 0) {
+        // 有上一个兄弟节点，跳到上一个兄弟的最后一个后代
+        const prevSiblingId = siblings[currentIndexInSiblings - 1].id
+        const prevSiblingNode = nodeDataMap.value.get(prevSiblingId)
+        
+        // 找到这个兄弟节点的最后一个后代
+        let targetNode = prevSiblingNode
+        while (targetNode.children && targetNode.children.length > 0) {
+          const lastChild = targetNode.children[targetNode.children.length - 1]
+          targetNode = nodeDataMap.value.get(lastChild.id)
+        }
+        
+        const targetIndex = nodeList.value.findIndex(n => n.id === targetNode.id)
+        if (targetIndex !== -1) {
+          currentNodeIndex.value = targetIndex
+          highlightNode(currentNodeIndex.value)
+          return
+        }
+      } else {
+        // 是第一个子节点，跳到父节点
+        const parentIndex = nodeList.value.findIndex(n => n.id === current.parent.id)
+        if (parentIndex !== -1) {
+          currentNodeIndex.value = parentIndex
+          highlightNode(currentNodeIndex.value)
+          return
+        }
+      }
+    }
+  } else if (e.key === 'Enter' || e.key === ' ') {
+    e.preventDefault()
+    // 触发点击事件
+    const currentNode = nodeList.value[currentNodeIndex.value]
+    if (currentNode && currentNode.topic !== '根节点') {
+      emit('node-click', { content: currentNode.topic })
+    }
+  }
+}
+
+// 添加节点点击事件
+const addClickListeners = () => {
+  nextTick(() => {
+    if (!jsmindContainer.value) return
+    
+    setTimeout(() => {
+      const nodes = jsmindContainer.value.querySelectorAll('jmnode')
+      nodeElements.value = Array.from(nodes)
+      console.log('找到节点数量:', nodes.length)
+      
+      nodes.forEach((node, index) => {
+        const topic = node.textContent.trim()
+        console.log(`节点 ${index + 1}: "${topic}"`)
+        
+        // 移除旧的监听器
+        const newNode = node.cloneNode(true)
+        node.parentNode.replaceChild(newNode, node)
+        nodeElements.value[index] = newNode
+        
+        newNode.style.cursor = 'pointer'
+        newNode.addEventListener('click', (e) => {
+          e.stopPropagation()
+          const clickedTopic = newNode.textContent.trim()
+          console.log('点击节点:', clickedTopic)
+          
+          // 更新当前选中的索引
+          currentNodeIndex.value = index
+          highlightNode(currentNodeIndex.value)
+          
+          if (clickedTopic && clickedTopic !== '根节点') {
+            emit('node-click', { content: clickedTopic })
+          }
+        })
+        
+        // 添加悬停效果 - 只改变背景色
+        newNode.addEventListener('mouseenter', () => {
+          if (index !== currentNodeIndex.value) {
+            newNode.style.backgroundColor = 'rgba(59, 130, 246, 0.05)'
+          }
+          newNode.style.transition = 'background-color 0.2s'
+        })
+        
+        newNode.addEventListener('mouseleave', () => {
+          if (index !== currentNodeIndex.value) {
+            newNode.style.backgroundColor = ''
+          }
+        })
+      })
+    }, 500) // 增加延迟时间
+  })
+}
+
+// 放大
+const zoomIn = () => {
+  if (jm) jm.view.zoom_in()
+}
+
+// 缩小
+const zoomOut = () => {
+  if (jm) jm.view.zoom_out()
+}
+
+// 监听 markdown 变化
+watch(() => props.markdown, () => {
+  nextTick(() => {
+    initJsMind()
+  })
+})
+
+onMounted(() => {
+  if (props.markdown) {
+    nextTick(() => {
+      initJsMind()
+    })
+  }
+  
+  // 添加键盘事件监听
+  window.addEventListener('keydown', handleKeyNavigation)
+})
+
+onUnmounted(() => {
+  // 移除键盘事件监听
+  window.removeEventListener('keydown', handleKeyNavigation)
+})
+</script>
+
+<style scoped>
+:deep(jmnodes) {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+:deep(jmnode) {
+  cursor: pointer;
+  transition: background-color 0.2s;
+  border-radius: 4px;
+}
+
+:deep(jmnode:hover) {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* 隐藏默认的展开/收起按钮 */
+:deep(.jmexpander) {
+  display: none !important;
+}
+
+:deep(jmexpander-hidden) {
+  display: none !important;
+}
+</style>
