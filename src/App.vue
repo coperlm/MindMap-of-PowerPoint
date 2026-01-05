@@ -1,5 +1,10 @@
 <template>
-  <div class="w-full h-full bg-gray-50 flex flex-col">
+  <div 
+    ref="appContainer"
+    class="w-full h-full bg-gray-50 flex flex-col outline-none"
+    tabindex="0"
+    @click="focusApp"
+  >
     <!-- 顶部导航栏 -->
     <header class="bg-white shadow-sm px-6 py-4 flex items-center justify-between">
       <div class="flex items-center space-x-3">
@@ -19,6 +24,7 @@
       <MindMap 
         :markdown="markdown" 
         :image-mapping="imageMapping"
+        :image-viewer-open="showImageViewer"
         @node-click="handleNodeClick"
         class="w-full h-full"
       />
@@ -39,7 +45,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, nextTick } from 'vue'
 import MindMap from './components/MindMap.vue'
 import ImageViewer from './components/ImageViewer.vue'
 
@@ -144,10 +150,26 @@ const gotoNextNode = () => {
 const closeImageViewer = () => {
   showImageViewer.value = false
   currentImages.value = []
+  // 恢复焦点到主容器
+  nextTick(() => {
+    focusApp()
+  })
+}
+
+// 聚焦到主容器
+const focusApp = () => {
+  if (appContainer.value) {
+    appContainer.value.focus()
+  }
 }
 
 onMounted(() => {
   loadMarkdown()
   loadConfig()
+  
+  // 页面加载后自动聚焦
+  nextTick(() => {
+    focusApp()
+  })
 })
 </script>

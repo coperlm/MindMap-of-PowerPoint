@@ -1,5 +1,9 @@
 <template>
-  <div class="relative w-full h-full bg-white">
+  <div 
+    ref="jsmindContainer"
+    tabindex="0"
+    class="relative w-full h-full bg-white focus:outline-none"
+  >
     <!-- 控制按钮和提示 -->
     <div class="absolute top-4 right-4 z-10 flex flex-col gap-2">
       <div class="flex gap-2">
@@ -28,11 +32,8 @@
       </div>
     </div>
     
-    <!-- 思维导图容器 -->
-    <div 
-      ref="jsmindContainer" 
-      class="w-full h-full"
-    ></div>
+    <!-- 思维导图内容区 -->
+    <div ref="mindmapContent" class="w-full h-full"></div>
     
     <!-- 提示信息 -->
     <div v-if="!markdown" class="absolute inset-0 flex items-center justify-center">
@@ -45,7 +46,7 @@
 </template>
 
 <script setup>
-import { ref, watch, onMounted, onUnmounted, nextTick } from 'vue'
+import { ref, watch, onMounted, onUnmounted, nextTick, computed } from 'vue'
 import jsMind from 'jsmind'
 import 'jsmind/style/jsmind.css'
 
@@ -57,12 +58,19 @@ const props = defineProps({
   imageMapping: {
     type: Object,
     default: () => ({})
+  },
+  imageViewerOpen: {
+    type: Boolean,
+    default: false
   }
 })
 
 const emit = defineEmits(['node-click'])
 
+const imageMapping = computed(() => props.imageMapping)
+
 const jsmindContainer = ref(null)
+const mindmapContent = ref(null)
 let jm = null
 const nodeList = ref([])
 const currentNodeIndex = ref(0)
@@ -111,12 +119,12 @@ const parseMarkdown = (markdown) => {
 
 // 初始化思维导图
 const initJsMind = () => {
-  if (!jsmindContainer.value || !props.markdown) return
+  if (!mindmapContent.value || !props.markdown) return
   
   const mindData = parseMarkdown(props.markdown)
   
   const options = {
-    container: jsmindContainer.value,
+    container: mindmapContent.value,
     theme: 'primary',
     editable: false,
     depth: 4,
@@ -130,12 +138,10 @@ const initJsMind = () => {
       hspace: 50,
       vspace: 20,
       pspace: 15
-    }
+    },
+    // 完全禁用展开/收起功能
+    support_html: false
   }
-  
-  // 禁用默认的折叠/展开功能
-  jsMind.prototype.expand_node = function() { return }
-  jsMind.prototype.collapse_node = function() { return }
   
   const mind = {
     meta: {
@@ -148,11 +154,17 @@ const initJsMind = () => {
   
   if (jm) {
     jm = null
-    jsmindContainer.value.innerHTML = ''
+    mindmapContent.value.innerHTML = ''
   }
   
   jm = new jsMind(options)
   jm.show(mind)
+  
+  // 禁用展开/收起功能但保留图标
+  if (jm) {
+    jm.expand_node = function() { return false }
+    jm.collapse_node = function() { return false }
+  }
   
   // 构建导航列表
   nodeList.value = buildNavigationList(mindData)
@@ -170,6 +182,11 @@ const initJsMind = () => {
         highlightNode(currentNodeIndex.value)
       }, 600)
     }
+  }
+  
+  // 确保容器可聚焦
+  if (jsmindContainer.value) {
+    jsmindContainer.value.setAttribute('tabindex', '0')
   }
 }
 
@@ -241,7 +258,15 @@ const getPrevNodeWithImages = (startIndex) => {
 
 // 键盘导航处理
 const handleKeyNavigation = (e) => {
+  console.log('MindMap 键盘事件:', e.key, '图片查看器状态:', props.imageViewerOpen)
+  
   if (!nodeList.value.length) return
+  
+  // 如果图片查看器打开，不处理
+  if (props.imageViewerOpen) {
+    console.log('图片查看器开启，跳过MindMap键盘处理')
+    return
+  }
   
   const current = nodeList.value[currentNodeIndex.value]
   
@@ -421,6 +446,9 @@ const zoomOut = () => {
 watch(() => props.markdown, () => {
   nextTick(() => {
     initJsMind()
+  })
+})
+
 // 监听 imageMapping 变化
 watch(() => props.imageMapping, () => {
   // imageMapping 更新后重新高亮
@@ -435,25 +463,29 @@ watch(() => props.imageMapping, () => {
   }
 }, { deep: true })
 
-const imageMapping = computed(() => props.imageMapping)
-
-  })
-})
-
 onMounted(() => {
+  // 添加键盘事件监听 - 使用window确保全局捕获
+  window.addEventListener('keydown', handleKeyNavigation, true)
+  console.log('MindMap 挂载，添加键盘监听器')
+  
+  // 立即聚焦到容器
+  nextTick(() => {
+    if (jsmindContainer.value) {
+      jsmindContainer.value.focus()
+      console.log('MindMap 容器聚焦')
+    }
+  })
+  
   if (props.markdown) {
     nextTick(() => {
       initJsMind()
     })
   }
-  
-  // 添加键盘事件监听
-  window.addEventListener('keydown', handleKeyNavigation)
 })
 
 onUnmounted(() => {
   // 移除键盘事件监听
-  window.removeEventListener('keydown', handleKeyNavigation)
+  window.removeEventListener('keydown', handleKeyNavigation, true)
 })
 </script>
 
@@ -472,12 +504,10 @@ onUnmounted(() => {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
-/* 隐藏默认的展开/收起按钮 */
+/* 禁用展开/收起按钮的点击功能但保留显示 */
+:deep(jmexpander),
 :deep(.jmexpander) {
-  display: none !important;
-}
-
-:deep(jmexpander-hidden) {
-  display: none !important;
+  pointer-events: none !important;
+  cursor: default !important;
 }
 </style>
