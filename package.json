@@ -6,7 +6,10 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "gen:config": "node scripts/generate-config.js",
+    "gen:images": "node scripts/prepare-images.js && python3 scripts/generate_images.py",
+    "gen:all": "npm run gen:config && npm run gen:images"
   },
   "dependencies": {
     "vue": "^3.4.15",
