@@ -1,173 +1,248 @@
 {
   "nodes": {
-    "第一部分：项目概述": {
+    "🎯 核心功能": {
       "images": [
-        "/images/slide_2.png"
+        "./images/slide_2.png"
       ]
     },
-    "1.1 项目背景": {
+    "思维导图展示": {
       "images": [
-        "/images/slide_3.png"
+        "./images/slide_3.png"
       ]
     },
-    "1.2 市场分析": {
+    "全屏图片浏览": {
       "images": [
-        "/images/slide_4.png"
+        "./images/slide_4.png"
       ]
     },
-    "1.3 项目目标": {
+    "纯键盘操作": {
       "images": [
-        "/images/slide_5.png"
+        "./images/slide_35.png"
       ]
     },
-    "1.4 核心价值": {
+    "无缝切换": {
       "images": [
-        "/images/slide_6.png"
+        "./images/slide_6.png"
       ]
     },
-    "第二部分：技术方案": {
+    "⌨️ 键盘导航": {
       "images": [
-        "/images/slide_7.png"
+        "./images/slide_7.png"
       ]
     },
-    "2.1 系统架构": {
+    "左右键浏览节点": {
       "images": [
-        "/images/slide_8.png"
+        "./images/slide_8.png"
       ]
     },
-    "2.2 前端技术栈": {
+    "Enter 查看图片": {
       "images": [
-        "/images/slide_9.png"
+        "./images/slide_9.png"
       ]
     },
-    "2.3 后端技术栈": {
+    "ESC 退出查看": {
       "images": [
-        "/images/slide_10.png"
+        "./images/slide_10.png"
       ]
     },
-    "2.4 数据库设计": {
+    "支持跨节点切换": {
       "images": [
-        "/images/slide_11.png"
+        "./images/slide_11.png"
       ]
     },
-    "2.5 安全方案": {
+    "🎨 界面特点": {
       "images": [
-        "/images/slide_12.png"
+        "./images/slide_12.png"
       ]
     },
-    "第三部分：功能模块": {
+    "响应式设计": {
       "images": [
-        "/images/slide_13.png"
+        "./images/slide_13.png"
       ]
     },
-    "3.1 用户管理": {
+    "简洁现代": {
       "images": [
-        "/images/slide_14.png"
+        "./images/slide_14.png"
       ]
     },
-    "3.2 权限系统": {
+    "高效交互": {
       "images": [
-        "/images/slide_15.png"
+        "./images/slide_15.png"
       ]
     },
-    "3.3 数据分析": {
+    "专注内容": {
       "images": [
-        "/images/slide_16.png"
+        "./images/slide_16.png"
       ]
     },
-    "3.4 报表系统": {
+    "🧠 思维导图": {
       "images": [
-        "/images/slide_17.png"
+        "./images/slide_17.png"
       ]
     },
-    "3.5 消息通知": {
+    "树状结构展示": {
       "images": [
-        "/images/slide_18.png"
+        "./images/slide_18.png"
       ]
     },
-    "第四部分：实施计划": {
+    "节点可展开折叠": {
       "images": [
-        "/images/slide_19.png"
+        "./images/slide_19.png"
       ]
     },
-    "4.1 第一阶段：需求分析": {
+    "支持多层嵌套": {
       "images": [
-        "/images/slide_20.png"
+        "./images/slide_20.png"
       ]
     },
-    "4.2 第二阶段：系统设计": {
+    "清晰的层级关系": {
       "images": [
-        "/images/slide_21.png"
+        "./images/slide_21.png"
       ]
     },
-    "4.3 第三阶段：开发实施": {
+    "📸 图片展示": {
       "images": [
-        "/images/slide_22.png"
+        "./images/slide_22.png"
       ]
     },
-    "4.4 第四阶段：测试上线": {
+    "100% 全屏显示": {
       "images": [
-        "/images/slide_23.png"
+        "./images/slide_23.png"
       ]
     },
-    "第五部分：团队协作": {
+    "高清无损渲染": {
       "images": [
-        "/images/slide_24.png"
+        "./images/slide_24.png"
       ]
     },
-    "5.1 团队架构": {
+    "流畅切换体验": {
       "images": [
-        "/images/slide_25.png"
+        "./images/slide_25.png"
       ]
     },
-    "5.2 开发流程": {
+    "自动预加载": {
       "images": [
-        "/images/slide_26.png"
+        "./images/slide_26.png"
       ]
     },
-    "5.3 质量保障": {
+    "⚡ 性能优化": {
       "images": [
-        "/images/slide_27.png"
+        "./images/slide_27.png"
       ]
     },
-    "第六部分：风险管理": {
+    "图片预加载": {
       "images": [
-        "/images/slide_28.png"
+        "./images/slide_28.png"
       ]
     },
-    "6.1 技术风险": {
+    "相邻节点缓存": {
       "images": [
-        "/images/slide_29.png"
+        "./images/slide_29.png"
       ]
     },
-    "6.2 进度风险": {
+    "无动画切换": {
       "images": [
-        "/images/slide_30.png"
+        "./images/slide_30.png"
       ]
     },
-    "6.3 应对策略": {
+    "即时响应": {
       "images": [
-        "/images/slide_31.png"
+        "./images/slide_31.png"
       ]
     },
-    "第七部分：总结展望": {
+    "🎓 学术演示": {
       "images": [
-        "/images/slide_32.png"
+        "./images/slide_32.png"
       ]
     },
-    "7.1 项目成果": {
+    "专业简洁": {
       "images": [
-        "/images/slide_33.png"
+        "./images/slide_33.png"
       ]
     },
-    "7.2 经验总结": {
+    "无干扰设计": {
       "images": [
-        "/images/slide_34.png"
+        "./images/slide_34.png"
       ]
     },
-    "7.3 未来规划": {
+    "高效展示": {
       "images": [
-        "/images/slide_35.png"
+        "./images/slide_36.png"
+      ]
+    },
+    "📱 移动友好": {
+      "images": [
+        "./images/slide_37.png"
+      ]
+    },
+    "响应式布局": {
+      "images": [
+        "./images/slide_38.png"
+      ]
+    },
+    "触摸支持": {
+      "images": [
+        "./images/slide_39.png"
+      ]
+    },
+    "自适应缩放": {
+      "images": [
+        "./images/slide_40.png"
+      ]
+    },
+    "完美兼容": {
+      "images": [
+        "./images/slide_41.png"
+      ]
+    },
+    "🔧 技术栈": {
+      "images": [
+        "./images/slide_42.png"
+      ]
+    },
+    "Vue 3 框架": {
+      "images": [
+        "./images/slide_43.png"
+      ]
+    },
+    "Vite 构建工具": {
+      "images": [
+        "./images/slide_44.png"
+      ]
+    },
+    "jsMind 导图库": {
+      "images": [
+        "./images/slide_45.png"
+      ]
+    },
+    "Tailwind CSS": {
+      "images": [
+        "./images/slide_46.png"
+      ]
+    },
+    "🚀 快速开始": {
+      "images": [
+        "./images/slide_47.png"
+      ]
+    },
+    "编辑 index.md": {
+      "images": [
+        "./images/slide_48.png"
+      ]
+    },
+    "运行 gen:all": {
+      "images": [
+        "./images/slide_49.png"
+      ]
+    },
+    "替换图片": {
+      "images": [
+        "./images/slide_50.png"
+      ]
+    },
+    "立即使用": {
+      "images": [
+        "./images/slide_51.png"
       ]
     }
   }

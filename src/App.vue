@@ -95,19 +95,17 @@ const loadMarkdown = async () => {
     markdown.value = await response.text()
   } catch (error) {
     console.error('加载 Markdown 文件失败:', error)
-    markdown.value = `# 欢迎使用 MMPPPT
+    markdown.value = `# MMPPPT
 
-## 快速开始
-### 创建你的内容
-### 添加图片映射
+## 欢迎
+### 思维导图式 PPT
+### 纯键盘操作
+### 全屏图片展示
 
-## 示例章节
-### 示例节点 1
-### 示例节点 2
-
-## 更多功能
-### 支持多级嵌套
-### 自由扩展结构`
+## 开始使用
+### 点击节点查看内容
+### 左右键浏览
+### Enter 查看图片`
   }
 }
 

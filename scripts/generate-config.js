@@ -41,7 +41,7 @@ function generateConfig(nodes) {
     const imageIndex = index + 1;
     
     config.nodes[title] = {
-      images: [`/images/slide_${imageIndex}.png`]
+      images: [`./images/slide_${imageIndex}.png`]
     };
   });
   
