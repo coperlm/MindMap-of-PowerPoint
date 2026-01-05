@@ -6,20 +6,24 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "build:standalone": "vite build",
     "preview": "vite preview",
+    "preview:dist": "vite preview --outDir dist",
+    "serve": "python3 -m http.server 8080 --directory dist",
     "gen:config": "node scripts/generate-config.js",
     "gen:images": "node scripts/prepare-images.js && python3 scripts/generate_images.py",
     "gen:all": "npm run gen:config && npm run gen:images"
   },
   "dependencies": {
-    "vue": "^3.4.15",
-    "jsmind": "^0.8.5"
+    "jsmind": "^0.8.5",
+    "vue": "^3.4.15"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^5.0.3",
-    "vite": "^5.0.11",
     "autoprefixer": "^10.4.17",
     "postcss": "^8.4.33",
-    "tailwindcss": "^3.4.1"
+    "tailwindcss": "^3.4.1",
+    "vite": "^5.0.11",
+    "vite-plugin-singlefile": "^2.3.0"
   }
 }
