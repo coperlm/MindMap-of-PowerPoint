@@ -57,6 +57,37 @@ const currentNodeTitle = ref('')
 const allNodes = ref([])
 const currentNodeIndex = ref(0)
 
+// 预加载图片
+const preloadImages = (imagePaths) => {
+  imagePaths.forEach(path => {
+    const img = new Image()
+    img.src = path
+  })
+}
+
+// 预加载相邻节点的图片
+const preloadAdjacentNodes = (currentIndex) => {
+  const toPreload = []
+  
+  // 预加载上一个节点
+  if (currentIndex > 0) {
+    const prevNode = allNodes.value[currentIndex - 1]
+    const prevImages = imageMapping.value[prevNode]?.images || []
+    toPreload.push(...prevImages)
+  }
+  
+  // 预加载下一个节点
+  if (currentIndex < allNodes.value.length - 1) {
+    const nextNode = allNodes.value[currentIndex + 1]
+    const nextImages = imageMapping.value[nextNode]?.images || []
+    toPreload.push(...nextImages)
+  }
+  
+  if (toPreload.length > 0) {
+    preloadImages(toPreload)
+  }
+}
+
 // 加载 Markdown 文件
 const loadMarkdown = async () => {
   try {
@@ -92,6 +123,18 @@ const loadConfig = async () => {
       return imageMapping.value[key]?.images?.length > 0
     })
     console.log('所有有图片的节点:', allNodes.value)
+    
+    // 预加载所有图片（后台静默加载）
+    const allImages = []
+    Object.values(imageMapping.value).forEach(node => {
+      if (node.images) {
+        allImages.push(...node.images)
+      }
+    })
+    if (allImages.length > 0) {
+      console.log(`开始预加载 ${allImages.length} 张图片...`)
+      preloadImages(allImages)
+    }
   } catch (error) {
     console.warn('未找到配置文件，将使用默认配置')
   }
@@ -115,6 +158,9 @@ const handleNodeClick = (nodeData) => {
     currentNodeIndex.value = allNodes.value.indexOf(title)
     currentImages.value = images
     showImageViewer.value = true
+    
+    // 预加载相邻节点的图片
+    preloadAdjacentNodes(currentNodeIndex.value)
   } else {
     // 显示提示信息
     alert(`节点 "${title}" 没有关联的图片\n\n请在 config.json 中为该节点配置图片路径`)
@@ -129,6 +175,9 @@ const gotoPrevNode = () => {
     const nodeName = allNodes.value[currentNodeIndex.value]
     currentNodeTitle.value = nodeName
     currentImages.value = imageMapping.value[nodeName]?.images || []
+    
+    // 预加载相邻节点
+    preloadAdjacentNodes(currentNodeIndex.value)
     return true
   }
   return false
@@ -141,6 +190,9 @@ const gotoNextNode = () => {
     const nodeName = allNodes.value[currentNodeIndex.value]
     currentNodeTitle.value = nodeName
     currentImages.value = imageMapping.value[nodeName]?.images || []
+    
+    // 预加载相邻节点
+    preloadAdjacentNodes(currentNodeIndex.value)
     return true
   }
   return false

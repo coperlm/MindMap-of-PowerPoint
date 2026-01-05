@@ -21,10 +21,26 @@
         </button>
       </div>
       
-      <!-- 键盘提示 -->
-      <div class="bg-white rounded-lg shadow-md border border-gray-200 px-4 py-3 text-xs text-gray-600">
-        <div class="font-semibold mb-2 text-gray-800">⌨️ 键盘导航</div>
-        <div class="space-y-1">
+      <!-- 键盘提示 - 可折叠 -->
+      <div class="bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden">
+        <button 
+          @click="toggleKeyboardHelp"
+          class="w-full px-4 py-2 text-xs font-semibold text-gray-800 hover:bg-gray-50 transition-colors flex items-center justify-between"
+        >
+          <span>⌨️ 键盘导航</span>
+          <svg 
+            :class="['w-4 h-4 transition-transform', { 'rotate-180': showKeyboardHelp }]"
+            fill="none" 
+            stroke="currentColor" 
+            viewBox="0 0 24 24"
+          >
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+          </svg>
+        </button>
+        <div 
+          v-show="showKeyboardHelp"
+          class="px-4 pb-3 pt-1 text-xs text-gray-600 space-y-1 border-t border-gray-100"
+        >
           <div><span class="font-mono bg-gray-100 px-2 py-0.5 rounded">→</span> 进入子节点/下一个</div>
           <div><span class="font-mono bg-gray-100 px-2 py-0.5 rounded">←</span> 返回父节点</div>
           <div><span class="font-mono bg-gray-100 px-2 py-0.5 rounded">Enter</span> 查看图片</div>
@@ -76,6 +92,12 @@ const nodeList = ref([])
 const currentNodeIndex = ref(0)
 const nodeElements = ref([])
 const nodeDataMap = ref(new Map())
+const showKeyboardHelp = ref(false)
+
+// 切换键盘提示显示
+const toggleKeyboardHelp = () => {
+  showKeyboardHelp.value = !showKeyboardHelp.value
+}
 
 // 检查节点是否有图片
 const hasImages = (topic) => {

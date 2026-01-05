@@ -48,10 +48,32 @@ for i, img_info in enumerate(images, 1):
     img = Image.new('RGB', (1200, 800), img_info['color'])
     draw = ImageDraw.Draw(img)
     
-    try:
-        font_title = ImageFont.truetype('/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf', 48)
-        font_subtitle = ImageFont.truetype('/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf', 24)
-    except:
+    # 尝试多个中文字体路径
+    font_title = None
+    font_subtitle = None
+    
+    chinese_fonts = [
+        '/usr/share/fonts/adobe-source-han-sans/SourceHanSansCN-Regular.otf',
+        '/usr/share/fonts/noto-cjk/NotoSansCJK-Regular.ttc',
+        '/usr/share/fonts/truetype/wqy/wqy-zenhei.ttc',
+        '/usr/share/fonts/truetype/wqy/wqy-microhei.ttc',
+        '/usr/share/fonts/truetype/droid/DroidSansFallbackFull.ttf',
+        '/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc',
+        '/usr/share/fonts/truetype/arphic/uming.ttc',
+        '/System/Library/Fonts/PingFang.ttc',  # macOS
+        'C:\\Windows\\Fonts\\msyh.ttc',  # Windows 微软雅黑
+    ]
+    
+    for font_path in chinese_fonts:
+        try:
+            font_title = ImageFont.truetype(font_path, 56)
+            font_subtitle = ImageFont.truetype(font_path, 28)
+            break
+        except:
+            continue
+    
+    # 如果找不到中文字体，使用默认字体
+    if font_title is None:
         font_title = ImageFont.load_default()
         font_subtitle = ImageFont.load_default()
     
