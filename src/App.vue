@@ -1,10 +1,5 @@
 <template>
-  <div 
-    ref="appContainer"
-    class="w-full h-full bg-gray-50 flex flex-col outline-none"
-    tabindex="0"
-    @click="focusApp"
-  >
+  <div class="w-full h-full bg-gray-50 flex flex-col">
     <!-- 顶部导航栏 -->
     <header class="bg-white shadow-sm px-6 py-4 flex items-center justify-between">
       <div class="flex items-center space-x-3">
@@ -24,7 +19,6 @@
       <MindMap 
         :markdown="markdown" 
         :image-mapping="imageMapping"
-        :image-viewer-open="showImageViewer"
         @node-click="handleNodeClick"
         class="w-full h-full"
       />
@@ -45,7 +39,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, nextTick } from 'vue'
+import { ref, onMounted } from 'vue'
 import MindMap from './components/MindMap.vue'
 import ImageViewer from './components/ImageViewer.vue'
 
@@ -57,37 +51,6 @@ const currentNodeTitle = ref('')
 const allNodes = ref([])
 const currentNodeIndex = ref(0)
 
-// 预加载图片
-const preloadImages = (imagePaths) => {
-  imagePaths.forEach(path => {
-    const img = new Image()
-    img.src = path
-  })
-}
-
-// 预加载相邻节点的图片
-const preloadAdjacentNodes = (currentIndex) => {
-  const toPreload = []
-  
-  // 预加载上一个节点
-  if (currentIndex > 0) {
-    const prevNode = allNodes.value[currentIndex - 1]
-    const prevImages = imageMapping.value[prevNode]?.images || []
-    toPreload.push(...prevImages)
-  }
-  
-  // 预加载下一个节点
-  if (currentIndex < allNodes.value.length - 1) {
-    const nextNode = allNodes.value[currentIndex + 1]
-    const nextImages = imageMapping.value[nextNode]?.images || []
-    toPreload.push(...nextImages)
-  }
-  
-  if (toPreload.length > 0) {
-    preloadImages(toPreload)
-  }
-}
-
 // 加载 Markdown 文件
 const loadMarkdown = async () => {
   try {
@@ -95,17 +58,19 @@ const loadMarkdown = async () => {
     markdown.value = await response.text()
   } catch (error) {
     console.error('加载 Markdown 文件失败:', error)
-    markdown.value = `# MMPPPT
+    markdown.value = `# 欢迎使用 MMPPPT
 
-## 欢迎
-### 思维导图式 PPT
-### 纯键盘操作
-### 全屏图片展示
+## 快速开始
+### 创建你的内容
+### 添加图片映射
 
-## 开始使用
-### 点击节点查看内容
-### 左右键浏览
-### Enter 查看图片`
+## 示例章节
+### 示例节点 1
+### 示例节点 2
+
+## 更多功能
+### 支持多级嵌套
+### 自由扩展结构`
   }
 }
 
@@ -121,18 +86,6 @@ const loadConfig = async () => {
       return imageMapping.value[key]?.images?.length > 0
     })
     console.log('所有有图片的节点:', allNodes.value)
-    
-    // 预加载所有图片（后台静默加载）
-    const allImages = []
-    Object.values(imageMapping.value).forEach(node => {
-      if (node.images) {
-        allImages.push(...node.images)
-      }
-    })
-    if (allImages.length > 0) {
-      console.log(`开始预加载 ${allImages.length} 张图片...`)
-      preloadImages(allImages)
-    }
   } catch (error) {
     console.warn('未找到配置文件，将使用默认配置')
   }
@@ -156,9 +109,6 @@ const handleNodeClick = (nodeData) => {
     currentNodeIndex.value = allNodes.value.indexOf(title)
     currentImages.value = images
     showImageViewer.value = true
-    
-    // 预加载相邻节点的图片
-    preloadAdjacentNodes(currentNodeIndex.value)
   } else {
     // 显示提示信息
     alert(`节点 "${title}" 没有关联的图片\n\n请在 config.json 中为该节点配置图片路径`)
@@ -173,9 +123,6 @@ const gotoPrevNode = () => {
     const nodeName = allNodes.value[currentNodeIndex.value]
     currentNodeTitle.value = nodeName
     currentImages.value = imageMapping.value[nodeName]?.images || []
-    
-    // 预加载相邻节点
-    preloadAdjacentNodes(currentNodeIndex.value)
     return true
   }
   return false
@@ -188,9 +135,6 @@ const gotoNextNode = () => {
     const nodeName = allNodes.value[currentNodeIndex.value]
     currentNodeTitle.value = nodeName
     currentImages.value = imageMapping.value[nodeName]?.images || []
-    
-    // 预加载相邻节点
-    preloadAdjacentNodes(currentNodeIndex.value)
     return true
   }
   return false
@@ -200,26 +144,10 @@ const gotoNextNode = () => {
 const closeImageViewer = () => {
   showImageViewer.value = false
   currentImages.value = []
-  // 恢复焦点到主容器
-  nextTick(() => {
-    focusApp()
-  })
-}
-
-// 聚焦到主容器
-const focusApp = () => {
-  if (appContainer.value) {
-    appContainer.value.focus()
-  }
 }
 
 onMounted(() => {
   loadMarkdown()
   loadConfig()
-  
-  // 页面加载后自动聚焦
-  nextTick(() => {
-    focusApp()
-  })
 })
 </script>

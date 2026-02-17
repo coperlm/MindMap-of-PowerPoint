@@ -1,9 +1,5 @@
 <template>
-  <div 
-    ref="jsmindContainer"
-    tabindex="0"
-    class="relative w-full h-full bg-white focus:outline-none"
-  >
+  <div class="relative w-full h-full bg-white">
     <!-- 控制按钮和提示 -->
     <div class="absolute top-4 right-4 z-10 flex flex-col gap-2">
       <div class="flex gap-2">
@@ -21,26 +17,10 @@
         </button>
       </div>
       
-      <!-- 键盘提示 - 可折叠 -->
-      <div class="bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden">
-        <button 
-          @click="toggleKeyboardHelp"
-          class="w-full px-4 py-2 text-xs font-semibold text-gray-800 hover:bg-gray-50 transition-colors flex items-center justify-between"
-        >
-          <span>⌨️ 键盘导航</span>
-          <svg 
-            :class="['w-4 h-4 transition-transform', { 'rotate-180': showKeyboardHelp }]"
-            fill="none" 
-            stroke="currentColor" 
-            viewBox="0 0 24 24"
-          >
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-          </svg>
-        </button>
-        <div 
-          v-show="showKeyboardHelp"
-          class="px-4 pb-3 pt-1 text-xs text-gray-600 space-y-1 border-t border-gray-100"
-        >
+      <!-- 键盘提示 -->
+      <div class="bg-white rounded-lg shadow-md border border-gray-200 px-4 py-3 text-xs text-gray-600">
+        <div class="font-semibold mb-2 text-gray-800">⌨️ 键盘导航</div>
+        <div class="space-y-1">
           <div><span class="font-mono bg-gray-100 px-2 py-0.5 rounded">→</span> 进入子节点/下一个</div>
           <div><span class="font-mono bg-gray-100 px-2 py-0.5 rounded">←</span> 返回父节点</div>
           <div><span class="font-mono bg-gray-100 px-2 py-0.5 rounded">Enter</span> 查看图片</div>
@@ -48,8 +28,11 @@
       </div>
     </div>
     
-    <!-- 思维导图内容区 -->
-    <div ref="mindmapContent" class="w-full h-full"></div>
+    <!-- 思维导图容器 -->
+    <div 
+      ref="jsmindContainer" 
+      class="w-full h-full"
+    ></div>
     
     <!-- 提示信息 -->
     <div v-if="!markdown" class="absolute inset-0 flex items-center justify-center">
@@ -62,7 +45,7 @@
 </template>
 
 <script setup>
-import { ref, watch, onMounted, onUnmounted, nextTick, computed } from 'vue'
+import { ref, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import jsMind from 'jsmind'
 import 'jsmind/style/jsmind.css'
 
@@ -74,30 +57,17 @@ const props = defineProps({
   imageMapping: {
     type: Object,
     default: () => ({})
-  },
-  imageViewerOpen: {
-    type: Boolean,
-    default: false
   }
 })
 
 const emit = defineEmits(['node-click'])
 
-const imageMapping = computed(() => props.imageMapping)
-
 const jsmindContainer = ref(null)
-const mindmapContent = ref(null)
 let jm = null
 const nodeList = ref([])
 const currentNodeIndex = ref(0)
 const nodeElements = ref([])
 const nodeDataMap = ref(new Map())
-const showKeyboardHelp = ref(false)
-
-// 切换键盘提示显示
-const toggleKeyboardHelp = () => {
-  showKeyboardHelp.value = !showKeyboardHelp.value
-}
 
 // 检查节点是否有图片
 const hasImages = (topic) => {
@@ -141,12 +111,12 @@ const parseMarkdown = (markdown) => {
 
 // 初始化思维导图
 const initJsMind = () => {
-  if (!mindmapContent.value || !props.markdown) return
+  if (!jsmindContainer.value || !props.markdown) return
   
   const mindData = parseMarkdown(props.markdown)
   
   const options = {
-    container: mindmapContent.value,
+    container: jsmindContainer.value,
     theme: 'primary',
     editable: false,
     depth: 4,
@@ -160,10 +130,12 @@ const initJsMind = () => {
       hspace: 50,
       vspace: 20,
       pspace: 15
-    },
-    // 完全禁用展开/收起功能
-    support_html: false
+    }
   }
+  
+  // 禁用默认的折叠/展开功能
+  jsMind.prototype.expand_node = function() { return }
+  jsMind.prototype.collapse_node = function() { return }
   
   const mind = {
     meta: {
@@ -176,17 +148,11 @@ const initJsMind = () => {
   
   if (jm) {
     jm = null
-    mindmapContent.value.innerHTML = ''
+    jsmindContainer.value.innerHTML = ''
   }
   
   jm = new jsMind(options)
   jm.show(mind)
-  
-  // 禁用展开/收起功能但保留图标
-  if (jm) {
-    jm.expand_node = function() { return false }
-    jm.collapse_node = function() { return false }
-  }
   
   // 构建导航列表
   nodeList.value = buildNavigationList(mindData)
@@ -204,11 +170,6 @@ const initJsMind = () => {
         highlightNode(currentNodeIndex.value)
       }, 600)
     }
-  }
-  
-  // 确保容器可聚焦
-  if (jsmindContainer.value) {
-    jsmindContainer.value.setAttribute('tabindex', '0')
   }
 }
 
@@ -280,15 +241,7 @@ const getPrevNodeWithImages = (startIndex) => {
 
 // 键盘导航处理
 const handleKeyNavigation = (e) => {
-  console.log('MindMap 键盘事件:', e.key, '图片查看器状态:', props.imageViewerOpen)
-  
   if (!nodeList.value.length) return
-  
-  // 如果图片查看器打开，不处理
-  if (props.imageViewerOpen) {
-    console.log('图片查看器开启，跳过MindMap键盘处理')
-    return
-  }
   
   const current = nodeList.value[currentNodeIndex.value]
   
@@ -468,9 +421,6 @@ const zoomOut = () => {
 watch(() => props.markdown, () => {
   nextTick(() => {
     initJsMind()
-  })
-})
-
 // 监听 imageMapping 变化
 watch(() => props.imageMapping, () => {
   // imageMapping 更新后重新高亮
@@ -485,29 +435,25 @@ watch(() => props.imageMapping, () => {
   }
 }, { deep: true })
 
-onMounted(() => {
-  // 添加键盘事件监听 - 使用window确保全局捕获
-  window.addEventListener('keydown', handleKeyNavigation, true)
-  console.log('MindMap 挂载，添加键盘监听器')
-  
-  // 立即聚焦到容器
-  nextTick(() => {
-    if (jsmindContainer.value) {
-      jsmindContainer.value.focus()
-      console.log('MindMap 容器聚焦')
-    }
+const imageMapping = computed(() => props.imageMapping)
+
   })
-  
+})
+
+onMounted(() => {
   if (props.markdown) {
     nextTick(() => {
       initJsMind()
     })
   }
+  
+  // 添加键盘事件监听
+  window.addEventListener('keydown', handleKeyNavigation)
 })
 
 onUnmounted(() => {
   // 移除键盘事件监听
-  window.removeEventListener('keydown', handleKeyNavigation, true)
+  window.removeEventListener('keydown', handleKeyNavigation)
 })
 </script>
 
@@ -526,10 +472,12 @@ onUnmounted(() => {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
-/* 禁用展开/收起按钮的点击功能但保留显示 */
-:deep(jmexpander),
+/* 隐藏默认的展开/收起按钮 */
 :deep(.jmexpander) {
-  pointer-events: none !important;
-  cursor: default !important;
+  display: none !important;
+}
+
+:deep(jmexpander-hidden) {
+  display: none !important;
 }
 </style>

@@ -1,7 +1,6 @@
 <template>
   <div 
-    class="fixed inset-0 z-50 bg-black flex items-center justify-center outline-none"
-    tabindex="0"
+    class="fixed inset-0 z-50 bg-black flex items-center justify-center"
     @click="handleBackdropClick"
   >
     <!-- 关闭按钮 - 更小更透明 -->
@@ -147,28 +146,25 @@ const handleImageError = (e) => {
 
 // 键盘事件处理
 const handleKeydown = (e) => {
-  // 只处理左右键和ESC
-  if (e.key === 'ArrowLeft' || e.key === 'ArrowRight' || e.key === 'Escape') {
-    e.preventDefault()
-    e.stopPropagation()
-    
-    if (e.key === 'ArrowLeft') {
-      prevImage()
-    } else if (e.key === 'ArrowRight') {
-      nextImage()
-    } else if (e.key === 'Escape') {
+  switch (e.key) {
+    case 'Escape':
       close()
-    }
+      break
+    case 'ArrowLeft':
+      prevImage()
+      break
+    case 'ArrowRight':
+      nextImage()
+      break
   }
 }
 
 onMounted(() => {
-  // 使用捕获阶段确保事件被正确处理
-  document.addEventListener('keydown', handleKeydown, true)
+  window.addEventListener('keydown', handleKeydown)
 })
 
 onUnmounted(() => {
-  document.removeEventListener('keydown', handleKeydown, true)
+  window.removeEventListener('keydown', handleKeydown)
 })
 </script>
 
